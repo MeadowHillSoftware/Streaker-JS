@@ -6,23 +6,57 @@ var oStreaker = {};
 
 oStreaker.addMainEventListeners = function() {
     $('#flashcards')
-        .on('click touchstart', oStreaker.handleFileUpload);
+        .on('change', oStreaker.handleFileUpload);
 };
 
 oStreaker.handleFileUpload = function(event) {
     event.stopPropagation();
-    var oFiles = $('#flashcards').prop("files");
-    var file = oFiles[0];
+    var aFiles = $('#flashcards').prop("files");
+    var file = aFiles[0];
+    var sFileName = file.name;
+    var aFileName = sFileName.split(".");
+    var sSetName = "";
+    for (var w = 0; w < (aFileName.length - 1); w++) {
+        var sWord = aFileName[w];
+        sSetName += sWord;
+    }
+    oStreaker.sSetName = sSetName;
     oStreaker.reader = new FileReader();
     oStreaker.reader.readAsText(file);
-    oStreaker.reader.onloadend = oStreaker.handleLoadedText;
-    //console.log(oFiles[0]);
+    oStreaker.reader.onload = oStreaker.handleLoadedText;
 };
 
 oStreaker.handleLoadedText = function(event) {
     event.stopPropagation();
     var sText = oStreaker.reader.result;
-    $('#results').text(sText);
+    var aText = [];
+    if (sText.indexOf("\n") !== -1) {
+        aText = sText.split("\n");
+    }
+    var oSet = {};
+    oSet.sName = oStreaker.sSetName;
+    oSet.aCards = [];
+    for (var l = 0; l < aText.length; l++) {
+        var sLine = aText[l];
+        if (sLine[0] === "!") {
+            var oTempCard = {};
+            var sDate = sLine.slice(1, -1);
+            oTempCard.iDate = Number(sDate);
+        } else if (sLine[0] === "?") {
+            if (!oTempCard) {
+                var oTempCard = {};
+                oTempCard.iDate = 0;
+            }
+            var sQuestion = sLine.slice(1, -1);
+            oTempCard.sQuestion = sQuestion;
+        } else if (sLine[0] === "@") {
+            var sAnswer = sLine.slice(1, -1);
+            oTempCard.sAnswer = sAnswer;
+            oSet.aCards.push(oTempCard);
+        }
+    }
+    var sSet = JSON.stringify(oSet);
+    $('#results').text(sSet);
 };
 
 oStreaker.reader = "";
