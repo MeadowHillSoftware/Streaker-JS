@@ -21,6 +21,7 @@ oStreaker.handleFileUpload = function(event) {
         sSetName += sWord;
     }
     oStreaker.sSetName = sSetName;
+    oStreaker.sFileName = sSetName + ".js";
     oStreaker.reader = new FileReader();
     oStreaker.reader.readAsText(file);
     oStreaker.reader.onload = oStreaker.handleLoadedText;
@@ -56,7 +57,14 @@ oStreaker.handleLoadedText = function(event) {
         }
     }
     var sSet = JSON.stringify(oSet);
-    $('#results').text(sSet);
+    var flashcardFile = new Blob([sSet], {type: 'text/javascript'});
+    var url = URL.createObjectURL(flashcardFile);
+    var link = $('<a />')
+        .attr('href', url)
+        .attr('download', oStreaker.sFileName)
+        .text(oStreaker.sFileName);
+    $('#results').append(link);
+    //$('#results').text(sSet);
 };
 
 oStreaker.reader = "";
