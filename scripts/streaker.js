@@ -5,6 +5,8 @@
 var oStreaker = {};
 
 oStreaker.addMainEventListeners = function() {
+    $('#answer-button')
+        .on('click', oStreaker.handleAnswerButton);
     $('#flashcards')
         .on('change', oStreaker.handleFileUpload);
     $('#old-format')
@@ -16,6 +18,15 @@ oStreaker.addMainEventListeners = function() {
 oStreaker.generateRandomNumber = function(iLength) {
     return Math.round(Math.random() * (iLength - 1));
 };
+
+oStreaker.handleAnswerButton = function(event) {
+    event.stopPropagation();
+    var oDeck = oStreaker.oCurrentDeck;
+    var aCards = oDeck.aCards;
+    var iCardIndex = oStreaker.iDrawnCardIndex;
+    var oCard = aCards[iCardIndex];
+    $('#answer').text(oCard.sAnswer);
+}
 
 oStreaker.handleFileUpload = function(event) {
     event.stopPropagation();
@@ -84,6 +95,7 @@ oStreaker.handleQuestionButton = function(event) {
     oStreaker.iDrawnCardIndex = iCardIndex;
     var oDrawnCard = aCards[iCardIndex];
     var sQuestion = oDrawnCard.sQuestion;
+    $('#answer').empty();
     $('#question')
         .empty()
         .text(sQuestion);
