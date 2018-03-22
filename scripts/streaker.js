@@ -9,6 +9,12 @@ oStreaker.addMainEventListeners = function() {
         .on('change', oStreaker.handleFileUpload);
     $('#old-format')
         .on('change', oStreaker.handleFileUpload);
+    $('#question-button')
+        .on('click', oStreaker.handleQuestionButton);
+};
+
+oStreaker.generateRandomNumber = function(iLength) {
+    return Math.round(Math.random() * (iLength - 1));
 };
 
 oStreaker.handleFileUpload = function(event) {
@@ -40,7 +46,14 @@ oStreaker.handleFileUpload = function(event) {
 oStreaker.handleFlashcards = function(event) {
     event.stopPropagation();
     var sDeck = oStreaker.reader.result;
-    var oDeck = JSON.parse(sDeck);
+    oStreaker.oCurrentDeck = JSON.parse(sDeck);
+    var sLoadMessage = "Flashcard file loaded.";
+    sLoadMessage += " Click Question button to begin."
+    $('#load-message').text(sLoadMessage);
+};
+
+oStreaker.handleQuestionButton = function(event) {
+    event.stopPropagation();
     var oDate = new Date();
     var iYear = oDate.getFullYear();
     var sYear = String(iYear);
@@ -56,10 +69,24 @@ oStreaker.handleFlashcards = function(event) {
     }
     var sTimeString = sYear + sMonth + sDate;
     var iTimeNumber = Number(sTimeString);
-    console.log(iTimeNumber);
+    var oDeck = oStreaker.oCurrentDeck;
+    var aCards = oDeck.aCards;
+    var aIndices = [];
+    for (var c = 0; c < aCards.length; c++) {
+        var oCard = aCards[c];
+        var iDate = oCard.iDate;
+        if (iTimeNumber >= iDate) {
+            aIndices.push(c);
+        }
+    }
+    var iIndex = oStreaker.generateRandomNumber(aIndices.length);
+    var iCardIndex = aIndices[iIndex];
+    oStreaker.iDrawnCardIndex = iCardIndex;
+    var oDrawnCard = aCards[iCardIndex];
+    var sQuestion = oDrawnCard.sQuestion;
     $('#question')
         .empty()
-        .text(oDeck);
+        .text(sQuestion);
 };
 
 oStreaker.handleOldFormat = function(event) {
@@ -104,6 +131,10 @@ oStreaker.handleOldFormat = function(event) {
         .append(link);
 };
 
-oStreaker.reader = "";
+oStreaker.iDrawnCardIndex = undefined;
+
+oStreaker.oCurrentDeck = undefined;
+
+oStreaker.reader = undefined;
 
 oStreaker.addMainEventListeners();
