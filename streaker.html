@@ -4,12 +4,48 @@
         <title>Streaker</title>
     </head>
     <body id="body">
+        <br>
         <div>
+            <span>Select Flashcard File (.json): </span>
             <input type="file" id="flashcards"/>
+        </div>
+        <br>
+        <span>Question:</span>
+        <span id="question"></span>
+        <br>
+        <br>
+        <span>Answer:</span>
+        <span id="answer"></span>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <div>
+            <span>Convert Old File (.txt) to New Format (.json): </span>
+            <input type="file" id="old-format"/>
+            <br>
+            <span id="file-link"></span>
+        </div>
+        <br>
+        <br>
+        <br>
+        <div>
+            <span>Add Cards</span>
+            <br>To: 
+            <input type="checkbox" id="current-deck"/>Current Deck
+            <input type="checkbox" id="new-deck"/>New Deck
+            <br>
+            <br>
+            <span>Question: </span>
+            <input type="text" id="new-question"/>
+            <br>
+            <br>
+            <span>Answer: </span>
+            <input type="text" id="new-answer"/>
             <button id="enter-button">Enter</button>
         </div>
-        <div id="results"></div>
-    <script src="./scripts/jquery-3.1.1.js"></script>
-    <script src="./scripts/streaker.js"></script>
+        <script src="./scripts/jquery-3.1.1.js"></script>
+        <script src="./scripts/streaker.js"></script>
     </body>
 </html>
