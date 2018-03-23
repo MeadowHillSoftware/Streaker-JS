@@ -5,18 +5,70 @@
 var oStreaker = {};
 
 oStreaker.addMainEventListeners = function() {
+    $('#zero-days-button')
+        .on('click', oStreaker.handleDaysButton);
+    $('#one-day-button')
+        .on('click', oStreaker.handleDaysButton);
+    $('#two-days-button')
+        .on('click', oStreaker.handleDaysButton);
+    $('#three-days-button')
+        .on('click', oStreaker.handleDaysButton);
+    $('#seven-days-button')
+        .on('click', oStreaker.handleDaysButton);
     $('#answer-button')
         .on('click', oStreaker.handleAnswerButton);
     $('#flashcards')
         .on('change', oStreaker.handleFileUpload);
     $('#old-format')
         .on('change', oStreaker.handleFileUpload);
-    $('#question-button')
-        .on('click', oStreaker.handleQuestionButton);
+    $('#save-button')
+        .on('click', oStreaker.handleSaveButton);
+};
+
+oStreaker.generateQuestion = function() {
+    var oDeck = oStreaker.oCurrentDeck;
+    var aCards = oDeck.aCards;
+    var iCurrentDate = oStreaker.getCurrentDate();
+    var aIndices = [];
+    for (var c = 0; c < aCards.length; c++) {
+        var oCard = aCards[c];
+        var iDate = oCard.iDate;
+        if (iCurrentDate >= iDate) {
+            aIndices.push(c);
+        }
+    }
+    var iIndex = oStreaker.generateRandomNumber(aIndices.length);
+    var iCardIndex = aIndices[iIndex];
+    oStreaker.iDrawnCardIndex = iCardIndex;
+    var oDrawnCard = aCards[iCardIndex];
+    var sQuestion = oDrawnCard.sQuestion;
+    $('#answer').empty();
+    $('#question')
+        .empty()
+        .text(sQuestion);
 };
 
 oStreaker.generateRandomNumber = function(iLength) {
     return Math.round(Math.random() * (iLength - 1));
+};
+
+oStreaker.getCurrentDate = function() {
+    var oDate = new Date();
+    var iYear = oDate.getFullYear();
+    var sYear = String(iYear);
+    var iMonth = oDate.getMonth();
+    iMonth++;
+    var sMonth = String(iMonth);
+    if (sMonth.length === 1) {
+        sMonth = "0" + sMonth;
+    }
+    var iDate = oDate.getDate();
+    var sDate = String(iDate);
+    if (sMonth.length === 1) {
+        sDate = "0" + sDate;
+    }
+    var sTimeString = sYear + sMonth + sDate;
+    return Number(sTimeString);
 };
 
 oStreaker.handleAnswerButton = function(event) {
@@ -26,7 +78,7 @@ oStreaker.handleAnswerButton = function(event) {
     var iCardIndex = oStreaker.iDrawnCardIndex;
     var oCard = aCards[iCardIndex];
     $('#answer').text(oCard.sAnswer);
-}
+};
 
 oStreaker.handleFileUpload = function(event) {
     event.stopPropagation();
@@ -54,51 +106,107 @@ oStreaker.handleFileUpload = function(event) {
     }
 };
 
+oStreaker.handleDaysButton = function(event) {
+    event.stopPropagation();
+    var sId = $(event.target).attr('id');
+    if (sId !== "zero-days-button") {
+        var iDelay = 1;
+        if (sId === "two-days-button") {
+            iDelay = 2;
+        } else if (sId === "three-days-button") {
+            iDelay = 3;
+        } else if (sId === "seven-days-button") {
+            iDelay = 7;
+        }
+        var aLeaps = [
+            0, 
+            4, 
+            8, 
+            12, 
+            16, 
+            20, 
+            24, 
+            28, 
+            32, 
+            36, 
+            40, 
+            44, 
+            48, 
+            52, 
+            56, 
+            60, 
+            64, 
+            68, 
+            72, 
+            76, 
+            80, 
+            84, 
+            88, 
+            92, 
+            96
+        ];
+        var oDays = {
+            1: 31, 
+            2: 28, 
+            3: 31, 
+            4: 30, 
+            5: 31, 
+            6: 30, 
+            7: 31, 
+            8: 31, 
+            9: 30, 
+            10: 31, 
+            11: 30, 
+            12: 31
+        };
+        var oDate = new Date();
+        var iYear = oDate.getFullYear();
+        var sYear = String(iYear);
+        var sPartialYear = sYear.substr(2);
+        var iPartialYear = Number(sPartialYear);
+        if (aLeaps.indexOf(iPartialYear) !== -1) {
+            oDays["2"] = 29;
+        }
+        var iMonth = oDate.getMonth();
+        iMonth++;
+        var sMonth = String(iMonth);
+        var iDate = oDate.getDate();
+        var iNewDate = iDate + iDelay;
+        var iNumberOfDays = oDays[sMonth]
+        if (iNewDate > iNumberOfDays) {
+            iNewDate = iNewDate - iNumberOfDays;
+            iMonth++
+            sMonth = String(iMonth);
+            if (iMonth > 12) {
+                iYear++;
+                sYear = String(iYear);
+                iMonth = 1;
+                sMonth = String(iMonth);
+            }
+        }
+        var sNewDate = String(iNewDate);
+        if (sNewDate.length === 1) {
+            sNewDate = "0" + sNewDate;
+        }
+        if (sMonth.length === 1) {
+            sMonth = "0" + sMonth;
+        }
+        var sTimeString = sYear + sMonth + sNewDate;
+        var iTimeNumber = Number(sTimeString);
+        var oCurrentDeck = oStreaker.oCurrentDeck;
+        var aCards = oCurrentDeck.aCards;
+        var iDrawnCardIndex = oStreaker.iDrawnCardIndex;
+        var oCard = aCards[iDrawnCardIndex];
+        oCard.iDate = iTimeNumber;
+    }
+    oStreaker.generateQuestion();
+};
+
 oStreaker.handleFlashcards = function(event) {
     event.stopPropagation();
     var sDeck = oStreaker.reader.result;
     oStreaker.oCurrentDeck = JSON.parse(sDeck);
-    var sLoadMessage = "Flashcard file loaded.";
-    sLoadMessage += " Click Question button to begin."
-    $('#load-message').text(sLoadMessage);
-};
-
-oStreaker.handleQuestionButton = function(event) {
-    event.stopPropagation();
-    var oDate = new Date();
-    var iYear = oDate.getFullYear();
-    var sYear = String(iYear);
-    var iMonth = oDate.getMonth();
-    var sMonth = String(iMonth);
-    if (sMonth.length === 1) {
-        sMonth = "0" + sMonth;
-    }
-    var iDate = oDate.getDate();
-    var sDate = String(iDate);
-    if (sMonth.length === 1) {
-        sDate = "0" + sDate;
-    }
-    var sTimeString = sYear + sMonth + sDate;
-    var iTimeNumber = Number(sTimeString);
-    var oDeck = oStreaker.oCurrentDeck;
-    var aCards = oDeck.aCards;
-    var aIndices = [];
-    for (var c = 0; c < aCards.length; c++) {
-        var oCard = aCards[c];
-        var iDate = oCard.iDate;
-        if (iTimeNumber >= iDate) {
-            aIndices.push(c);
-        }
-    }
-    var iIndex = oStreaker.generateRandomNumber(aIndices.length);
-    var iCardIndex = aIndices[iIndex];
-    oStreaker.iDrawnCardIndex = iCardIndex;
-    var oDrawnCard = aCards[iCardIndex];
-    var sQuestion = oDrawnCard.sQuestion;
-    $('#answer').empty();
-    $('#question')
-        .empty()
-        .text(sQuestion);
+    oStreaker.generateQuestion();
 };
 
 oStreaker.handleOldFormat = function(event) {
@@ -139,6 +247,23 @@ oStreaker.handleOldFormat = function(event) {
         .attr('download', oStreaker.sFileName)
         .text(oStreaker.sFileName);
     $('#file-link')
+        .empty()
+        .append(link);
+};
+
+oStreaker.handleSaveButton = function(event) {
+    event.stopPropagation();
+    var oDeck = oStreaker.oCurrentDeck;
+    var sName = oDeck.sName;
+    var sFileName = sName + ".json";
+    var sDeck = JSON.stringify(oDeck);
+    var flashcardFile = new Blob([sDeck], {type: 'application/json'});
+    var url = URL.createObjectURL(flashcardFile);
+    var link = $('<a />')
+        .attr('href', url)
+        .attr('download', oStreaker.sFileName)
+        .text(oStreaker.sFileName);
+    $('#saved-file')
         .empty()
         .append(link);
 };
