@@ -17,12 +17,46 @@ oStreaker.addMainEventListeners = function() {
         .on('click', oStreaker.handleDaysButton);
     $('#answer-button')
         .on('click', oStreaker.handleAnswerButton);
+    $('#current-deck')
+        .on('click', oStreaker.handleCheckbox);
+    $('#enter-button')
+        .on('click', oStreaker.handleEnterButton);
+    $('#erase-button')
+        .on('click', oStreaker.handleEraseButton);
+    $('#export-button')
+        .on('click', oStreaker.handleExportButton);
     $('#flashcards')
         .on('change', oStreaker.handleFileUpload);
+    $('#new-deck')
+        .on('click', oStreaker.handleCheckbox);
     $('#old-format')
         .on('change', oStreaker.handleFileUpload);
     $('#save-button')
         .on('click', oStreaker.handleSaveButton);
+};
+
+oStreaker.clearElements = function() {
+    $('#new-question').val('');
+    $('#new-answer').val('');
+    $('#current-deck').prop('checked', false);
+    $('#new-deck').prop('checked', false);
+};
+
+oStreaker.exportDeck = function(oDeck, sText, sId) {
+    var sName = oDeck.sName;
+    var sFileName = sName + ".json";
+    var sDeck = JSON.stringify(oDeck);
+    var flashcardFile = new Blob([sDeck], {type: 'application/json'});
+    var url = URL.createObjectURL(flashcardFile);
+    var span = $('<span></span>').text(sText);
+    var link = $('<a />')
+        .attr('href', url)
+        .attr('download', sFileName)
+        .text(sFileName);
+    $(('#' + sId))
+        .empty()
+        .append(span)
+        .append(link);
 };
 
 oStreaker.generateQuestion = function() {
@@ -80,29 +114,31 @@ oStreaker.handleAnswerButton = function(event) {
     $('#answer').text(oCard.sAnswer);
 };
 
-oStreaker.handleFileUpload = function(event) {
+oStreaker.handleCheckbox = function(event) {
     event.stopPropagation();
-    if ($(event.target).attr('id') === "old-format") {
-        var aFiles = $('#old-format').prop("files");
-    } else if ($(event.target).attr('id') === "flashcards") {
-        var aFiles = $('#flashcards').prop("files");
-    }
-    var file = aFiles[0];
-    var sFileName = file.name;
-    var aFileName = sFileName.split(".");
-    var sDeckName = "";
-    for (var w = 0; w < (aFileName.length - 1); w++) {
-        var sWord = aFileName[w];
-        sDeckName += sWord;
-    }
-    oStreaker.sDeckName = sDeckName;
-    oStreaker.sFileName = sDeckName + ".json";
-    oStreaker.reader = new FileReader();
-    oStreaker.reader.readAsText(file);
-    if ($(event.target).attr('id') === "old-format") {
-        oStreaker.reader.onload = oStreaker.handleOldFormat;
-    } else if ($(event.target).attr('id') === "flashcards") {
-        oStreaker.reader.onload = oStreaker.handleFlashcards;
+    var target = $(event.target);
+    var bChecked = target.prop('checked');
+    var sId = target.attr('id');
+    if (bChecked === true) {
+        if (sId === "current-deck") {
+            $('#new-deck').prop('checked', false);
+        } else {
+            $('#current-deck').prop('checked', false);
+            var lineBreak = $('<br />')
+                .attr('id', 'temp-break');
+            var name = $('<input/>')
+                .attr('type', 'text')
+                .attr('id', 'deck-name');
+            var nameSpan = $('#name-span');
+            lineBreak.insertBefore(nameSpan);
+            nameSpan.text('Name: ');
+            nameSpan.append(name);
+        }
+    } else {
+        if (sId === "new-deck") {
+            $('#name-span').empty();
+            $('#temp-break').remove();
+        }
     }
 };
 
@@ -202,6 +238,114 @@ oStreaker.handleDaysButton = function(event) {
     oStreaker.generateQuestion();
 };
 
+oStreaker.handleEnterButton = function(event) {
+    event.stopPropagation();
+    var sQuestion = $('#new-question').val();
+    var sAnswer = $('#new-answer').val();
+    var bCurrent = $('#current-deck').prop('checked');
+    var bNew = $('#new-deck').prop('checked');
+    var cardMessage = $('#card-message');
+    if (bCurrent === false && bNew === false) {
+        cardMessage
+            .empty()
+            .text('Error: Select deck to add card to.');
+    } else if (sQuestion === "") {
+        cardMessage
+            .empty()
+            .text('Error: Add a question.');
+    } else if (sAnswer === "") {
+        cardMessage
+            .empty()
+            .text('Error: Add an answer.');
+    } else {
+        var oCard = {
+            "iDate": oStreaker.getCurrentDate(),
+            "sQuestion": sQuestion,
+            "sAnswer": sAnswer
+        };
+        if (bCurrent === true) {
+            var oDeck = oStreaker.oCurrentDeck;
+            if (oDeck !== undefined) {
+                oDeck.aCards.push(oCard);
+            } else {
+                cardMessage
+                    .empty()
+                    .text('Error: No deck currently loaded.');
+            }
+        } else {
+            var sName = $('#deck-name').val()
+            if (sName === "") {
+                cardMessage
+                    .empty()
+                    .text('Error: Add a name for the deck.');
+            } else {
+                var oDeck = oStreaker.oNewDeck;
+                if (oDeck === undefined) {
+                    oStreaker.oNewDeck = {
+                        "sName": sName, 
+                        "aCards": []
+                    };
+                    oDeck = oStreaker.oNewDeck;
+                } else if (oDeck["sName"] !== sName) {
+                    oDeck["sName"] = sName;
+                }
+                oDeck.aCards.push(oCard);
+            }
+        }
+    }
+};
+
+oStreaker.handleEraseButton = function(event) {
+    event.stopPropagation();
+    var bCurrent = $('#current-deck').prop('checked');
+    var bNew = $('#new-deck').prop('checked');
+    if (bCurrent === true) {
+        oStreaker.oCurrentDeck = undefined;
+    } else if (bNew === true) {
+        oStreaker.oNewDeck = undefined;
+    }
+};
+
+oStreaker.handleExportButton = function(event) {
+    event.stopPropagation();
+    var bCurrent = $('#current-deck').prop('checked');
+    var bNew = $('#new-deck').prop('checked');
+    if (bCurrent === true) {
+        var oDeck = oStreaker.oCurrentDeck;
+    } else if (bNew === true) {
+        var oDeck = oStreaker.oNewDeck;
+    }
+    var sText = "Exported File: ";
+    var sId = "export-link";
+    oStreaker.exportDeck(oDeck, sText, sId);
+};
+
+oStreaker.handleFileUpload = function(event) {
+    event.stopPropagation();
+    if ($(event.target).attr('id') === "old-format") {
+        var aFiles = $('#old-format').prop("files");
+    } else if ($(event.target).attr('id') === "flashcards") {
+        var aFiles = $('#flashcards').prop("files");
+    }
+    var file = aFiles[0];
+    var sFileName = file.name;
+    var aFileName = sFileName.split(".");
+    var sDeckName = "";
+    for (var w = 0; w < (aFileName.length - 1); w++) {
+        var sWord = aFileName[w];
+        sDeckName += sWord;
+    }
+    oStreaker.sDeckName = sDeckName;
+    oStreaker.sFileName = sDeckName + ".json";
+    oStreaker.reader = new FileReader();
+    oStreaker.reader.readAsText(file);
+    if ($(event.target).attr('id') === "old-format") {
+        oStreaker.reader.onload = oStreaker.handleOldFormat;
+    } else if ($(event.target).attr('id') === "flashcards") {
+        oStreaker.reader.onload = oStreaker.handleFlashcards;
+    }
+};
+
 oStreaker.handleFlashcards = function(event) {
     event.stopPropagation();
     var sDeck = oStreaker.reader.result;
@@ -239,39 +383,27 @@ oStreaker.handleOldFormat = function(event) {
             oTempCard = {};
         }
     }
-    var sDeck = JSON.stringify(oDeck);
-    var flashcardFile = new Blob([sDeck], {type: 'application/json'});
-    var url = URL.createObjectURL(flashcardFile);
-    var link = $('<a />')
-        .attr('href', url)
-        .attr('download', oStreaker.sFileName)
-        .text(oStreaker.sFileName);
-    $('#file-link')
-        .empty()
-        .append(link);
+    var sText = "Converted File: ";
+    var sId = "convert-link";
+    oStreaker.exportDeck(oDeck, sText, sId);
 };
 
 oStreaker.handleSaveButton = function(event) {
     event.stopPropagation();
     var oDeck = oStreaker.oCurrentDeck;
-    var sName = oDeck.sName;
-    var sFileName = sName + ".json";
-    var sDeck = JSON.stringify(oDeck);
-    var flashcardFile = new Blob([sDeck], {type: 'application/json'});
-    var url = URL.createObjectURL(flashcardFile);
-    var link = $('<a />')
-        .attr('href', url)
-        .attr('download', oStreaker.sFileName)
-        .text(oStreaker.sFileName);
-    $('#saved-file')
-        .empty()
-        .append(link);
+    var sText = "Updated File: ";
+    var sId = "update-link";
+    oStreaker.exportDeck(oDeck, sText, sId);
 };
 
 oStreaker.iDrawnCardIndex = undefined;
 
 oStreaker.oCurrentDeck = undefined;
 
+oStreaker.oNewDeck = undefined;
+
 oStreaker.reader = undefined;
 
 oStreaker.addMainEventListeners();
+
+oStreaker.clearElements();
